@@ -152,48 +152,16 @@ impl Log for Logger {
                     args = with_color!(args_color, "{}", record.args()),
                 ));
             } else {
-                let cpu_id = earlycon::cpu_id();
-                let tid = earlycon::task_id();
-                let now = earlycon::time();
-                if let Some(cpu_id) = cpu_id {
-                    if let Some(tid) = tid {
-                        // show CPU ID and task ID
-                        __print_impl(with_color!(
-                            ColorCode::White,
-                            "[{:>3}.{:06} {cpu_id}:{tid} {path}:{line}] {args}\n",
-                            now.as_secs(),
-                            now.subsec_micros(),
-                            cpu_id = cpu_id,
-                            tid = tid,
-                            path = path,
-                            line = line,
-                            args = with_color!(args_color, "{}", record.args()),
-                        ));
-                    } else {
-                        // show CPU ID only
-                        __print_impl(with_color!(
-                            ColorCode::White,
-                            "[{:>3}.{:06} {cpu_id} {path}:{line}] {args}\n",
-                            now.as_secs(),
-                            now.subsec_micros(),
-                            cpu_id = cpu_id,
-                            path = path,
-                            line = line,
-                            args = with_color!(args_color, "{}", record.args()),
-                        ));
-                    }
-                } else {
-                    // neither CPU ID nor task ID is shown
-                    __print_impl(with_color!(
-                        ColorCode::White,
-                        "[{:>3}.{:06} {path}:{line}] {args}\n",
-                        now.as_secs(),
-                        now.subsec_micros(),
-                        path = path,
-                        line = line,
-                        args = with_color!(args_color, "{}", record.args()),
-                    ));
-                }
+                let now = hal_base::current_time();
+                __print_impl(with_color!(
+                    ColorCode::White,
+                    "[{:>3}.{:06} {path}:{line}] {args}\n",
+                    now.as_secs(),
+                    now.subsec_micros(),
+                    path = path,
+                    line = line,
+                    args = with_color!(args_color, "{}", record.args()),
+                ));
             }
         }
     }
@@ -203,7 +171,7 @@ impl Log for Logger {
 
 /// Prints the formatted string to the console.
 pub fn print_fmt(args: fmt::Arguments) -> fmt::Result {
-    use spinbase::SpinNoIrq; // TODO: more efficient
+    use spinirq::SpinNoIrq; // TODO: more efficient
     static LOCK: SpinNoIrq<()> = SpinNoIrq::new(());
 
     let _guard = LOCK.lock();
